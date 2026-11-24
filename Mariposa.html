@@ -813,14 +813,16 @@ function wChart(L){if(L.length<2)return'';const W=560,H=170,pl=34,pr=12,pt=14,pb
  const ticks=[hi,Math.round((hi+lo)/2),lo];
  return`<svg class="wch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica del peso">${ticks.map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" class="gl"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}<polyline points="${pts}" class="pl"/>${L.map(x=>`<circle cx="${X(x.k).toFixed(1)}" cy="${Y(x.kg).toFixed(1)}" r="4"/>`).join('')}<text x="${pl}" y="${H-6}">${fmtShort(L[0].k).slice(0,5)}</text><text x="${W-pr}" y="${H-6}" text-anchor="end">${fmtShort(L[L.length-1].k).slice(0,5)}</text></svg>`}
 function wDyn(msg){const V=wLoad(),L=V.list,last=L[L.length-1],first=L[0],prev=L[L.length-2];
- const head=`<div class="dh"><div><p class="kick">Nutrición · control de peso para ALF</p><h2>Peso</h2><p class="sub">El original es tu Peso.txt de Dropbox (carpeta «11 Peso»). Aquí solo se lee: no se sube a internet y se queda en este aparato.</p></div>${XB()}</div>`;
- const stats=last?`<div class="wst"><div><span class="lab">Último</span><b>${kgf(last.kg)} kg</b><span class="sub">${fmtDM(last.k)}</span></div>${prev?`<div><span class="lab">Desde el anterior</span><b>${kgd(last.kg-prev.kg)} kg</b><span class="sub">${fmtDM(prev.k)}</span></div>`:''}${L.length>1?`<div><span class="lab">Desde el primero</span><b>${kgd(last.kg-first.kg)} kg</b><span class="sub">${fmtDM(first.k)} · ${daysBetween(first.k,last.k)} días</span></div>`:''}</div>${wChart(L)}<details class="fold"><summary>Todos los pesos <span class="cnt">${L.length}</span></summary><ul class="wl">${[...L].reverse().map((x,i,a)=>`<li><span>${fmtDM(x.k)}</span><b>${kgf(x.kg)} kg</b><small>${a[i+1]?kgd(x.kg-a[i+1].kg):''}</small></li>`).join('')}</ul></details>`:'<p class="empty">Todavía no hay pesos. Pulsa «Cargar Peso.txt» y elígelo en Dropbox › Public › M A R I P O S A › 11 Peso.</p>';
- const bad=(V.bad||[]).length?`<p class="callout warn">No he entendido estas líneas: ${V.bad.map(esc).join(' · ')}</p>`:'';
- const src=V.at?`<p class="note">Leído de ${esc(V.src||'texto pegado')} · ${fmtShort(dkey(new Date(V.at)))} ${pad(new Date(V.at).getHours())}:${pad(new Date(V.at).getMinutes())}. Si este aparato perdiera los datos, vuelve a cargar Peso.txt y aparece todo.</p>`:'';
+ const head=`<div class="dh"><div><p class="kick">Nutrición · control de peso para ALF</p><h2>Peso</h2><p class="sub">Se lee solo del archivo peso.txt de GitHub: lo ve cualquiera que abra Mariposa.</p></div>${XB()}</div>`;
+ const stats=last?`<div class="wst"><div><span class="lab">Último</span><b>${kgf(last.kg)} kg</b><span class="sub">${fmtDM(last.k)}</span></div>${prev?`<div><span class="lab">Desde el anterior</span><b>${kgd(last.kg-prev.kg)} kg</b><span class="sub">${fmtDM(prev.k)}</span></div>`:''}${L.length>1?`<div><span class="lab">Desde el primero</span><b>${kgd(last.kg-first.kg)} kg</b><span class="sub">${fmtDM(first.k)} · ${daysBetween(first.k,last.k)} días</span></div>`:''}</div>${wChart(L)}<details class="fold"><summary>Todos los pesos <span class="cnt">${L.length}</span></summary><ul class="wl">${[...L].reverse().map((x,i,a)=>`<li><span>${fmtDM(x.k)}</span><b>${kgf(x.kg)} kg</b><small>${a[i+1]?kgd(x.kg-a[i+1].kg):''}</small></li>`).join('')}</ul></details>`:'<p class="empty">Todavía no hay pesos en peso.txt.</p>';
+ const bad=(V.bad||[]).length?`<p class="callout warn">No he entendido estas líneas de peso.txt: ${V.bad.map(esc).join(' · ')}</p>`:'';
+ const src=V.at?`<p class="note">Leído de peso.txt el ${fmtShort(dkey(new Date(V.at)))} a las ${pad(new Date(V.at).getHours())}:${pad(new Date(V.at).getMinutes())}.</p>`:'';
  $('wBody').innerHTML=head+stats+bad+
- `<div class="wact"><label class="btn up">${I.clip}Cargar Peso.txt<input type="file" id="wFile" accept=".txt,text/plain"></label><button type="button" class="btn" data-act="wpaste">Pegar texto</button>${last?`<button type="button" class="btn primary" data-act="wsend">Enviar el último a ALF</button>`:''}</div>`+
- `<div id="wPaste" class="wpaste" hidden><textarea class="in" id="wTxt" rows="6" placeholder="PESO&#10;Diciembre 2026&#10;Miércoles, 2 - XX,X Kg&#10;Martes, 1 - XX,X Kg"></textarea><div class="df"><span class="note">Una línea por día, lo más reciente arriba. Si cambia el mes, pon antes una línea con el mes y el año.</span><button type="button" class="btn primary" data-act="wread">Leer</button></div></div>`+
- `<p class="note" id="wMsg">${esc(msg||'')}</p>`+src}
+ `<div class="wact"><button type="button" class="btn" data-act="wreload">Actualizar</button>${last?`<button type="button" class="btn primary" data-act="wsend">Enviar el último a ALF</button>`:''}</div>`+
+ `<p class="note" id="wMsg">${esc(msg||'')}</p>`+src+
+ `<p class="note">Para añadir el peso de hoy: en GitHub abre peso.txt, pulsa el lápiz, escribe la línea debajo de «PESO» (p. ej. «Miércoles, 25 - XX,X Kg») y pulsa «Commit changes». En 1 o 2 minutos sale aquí.</p>`}
+async function wFetch(){try{const r=await fetch('peso.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return false;const x=wSet(await r.text(),'peso.txt');return x.ok}catch{return false}}
+async function wRefresh(){const ok=await wFetch();if($('dPeso').open)wDyn(ok?'':'No se ha podido leer peso.txt ahora mismo: se muestra lo último leído.')}
 function wFromFile(file){if(!file)return;const r=new FileReader();r.onload=()=>{const x=wSet(String(r.result||''),`«${file.name}»`);wDyn(x.ok?`Leídos ${x.n} pesos.`:'En ese archivo no he encontrado ningún peso.')};r.onerror=()=>wDyn('No se ha podido leer el archivo.');r.readAsText(file)}
 
 /* ---------- menú en PDF (A4 horizontal, al 100 %) ---------- */
@@ -888,7 +890,8 @@ document.addEventListener('click',async e=>{
  case'pilares':pilDyn();if(!$('dPil').open)$('dPil').showModal();break;
  case'ejer':ejDyn();if(!$('dEj').open)$('dEj').showModal();break;
  case'ejedit':{const r=ejRef();if(r)openFicha(r.i,r.f.id,true);break}
- case'peso':wDyn();if(!$('dPeso').open)$('dPeso').showModal();break;
+ case'peso':wDyn();if(!$('dPeso').open)$('dPeso').showModal();wRefresh();break;
+ case'wreload':wDyn('Leyendo peso.txt…');wRefresh();break;
  case'wpaste':{const z=$('wPaste');z.hidden=!z.hidden;if(!z.hidden)$('wTxt').focus();break}
  case'wread':{const x=wSet($('wTxt').value,'texto pegado');wDyn(x.ok?`Leídos ${x.n} pesos.`:'No he encontrado ningún peso en el texto.');break}
  case'wsend':{const l=wLast();if(!l)break;const txt=`Peso ${fmtDM(l.k)}: ${kgf(l.kg)} kg`;
@@ -1025,6 +1028,7 @@ function migrate(s){for(const d of DK){if(d==='todos')continue;(s.days[d]||[]).f
  if(saved&&saved.seed===SEED_V&&saved.state)state=norm(saved.state);
  else{state=norm(JSON.parse(JSON.stringify(SEED)));if(saved&&saved.state){carry(saved.state,state,saved.seed);state=norm(state)}}
  migrate(state);const ok=persist();render();setStatus(ok?'Guardado en este navegador':'Este navegador no deja guardar los cambios',ok?'':'warn')})();
+wRefresh();document.addEventListener('visibilitychange',()=>{if(!document.hidden)wRefresh()});
 setInterval(()=>{if(drag||!state)return;clock();if(sig()!==lastSig){render();if($('dAv').open)avDyn()}},30000);
 addEventListener('storage',e=>{if(e.key!==KEY||!e.newValue||drag||dirty)return;try{const v=JSON.parse(e.newValue);if(v&&v.state){state=norm(v.state);render();refreshDialogs()}}catch{}});
 }
