@@ -778,6 +778,7 @@ const kgf=n=>(Math.round(n*10)/10).toFixed(1).replace('.',',');
 const kgd=n=>{const r=Math.round(n*10)/10;return(r>0?'+':r<0?'−':'±')+kgf(Math.abs(r))};
 const wLast=()=>{const L=wLoad().list;return L.length?L[L.length-1]:null};
 const fmtDM=k=>{const d=parse(k);return`${DAYS[(d.getDay()+6)%7][1].toLowerCase()} ${d.getDate()}/${d.getMonth()+1}`};
+const WDN=['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
 function parsePeso(txt){
  const MM=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
  const now=new Date(),out=new Map(),bad=[];let cy=null,cm=null;
@@ -798,6 +799,8 @@ function parsePeso(txt){
   if(m==null)m=cm!=null?cm:now.getMonth();if(y==null)y=cy!=null?cy:now.getFullYear();
   let dt=new Date(y,m,d);if(dt.getDate()!==d||dt.getMonth()!==m){bad.push(line);continue}
   if(!exp&&cm==null&&dt>now)dt=new Date(y,m-1,d);
+  const wm=low.match(/\b(domingo|lunes|martes|miercoles|jueves|viernes|sabado)\b/),wd=wm?WDN.indexOf(wm[1]):-1;
+  if(wd>=0&&dt.getDay()!==wd){for(const off of[0,-1,1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11]){const c=new Date(dt.getFullYear(),dt.getMonth()+off,d);if(c.getDate()===d&&c.getDay()===wd&&c<=now){dt=c;break}}}
   out.set(dkey(dt),{k:dkey(dt),kg})}
  return{list:[...out.values()].sort((a,b)=>a.k<b.k?-1:1),bad}}
 function wSet(txt,src){const r=parsePeso(txt);if(!r.list.length)return{ok:false,bad:r.bad};
@@ -810,13 +813,13 @@ function wChart(L){if(L.length<2)return'';const W=560,H=170,pl=34,pr=12,pt=14,pb
  const ticks=[hi,Math.round((hi+lo)/2),lo];
  return`<svg class="wch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfica del peso">${ticks.map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" class="gl"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}<polyline points="${pts}" class="pl"/>${L.map(x=>`<circle cx="${X(x.k).toFixed(1)}" cy="${Y(x.kg).toFixed(1)}" r="4"/>`).join('')}<text x="${pl}" y="${H-6}">${fmtShort(L[0].k).slice(0,5)}</text><text x="${W-pr}" y="${H-6}" text-anchor="end">${fmtShort(L[L.length-1].k).slice(0,5)}</text></svg>`}
 function wDyn(msg){const V=wLoad(),L=V.list,last=L[L.length-1],first=L[0],prev=L[L.length-2];
- const head=`<div class="dh"><div><p class="kick">Nutrición · control de peso para ALF</p><h2>Peso</h2><p class="sub">El original es tu archivo .txt de la carpeta «11 Peso». Aquí solo se lee: no se sube a internet y se queda en este aparato.</p></div>${XB()}</div>`;
- const stats=last?`<div class="wst"><div><span class="lab">Último</span><b>${kgf(last.kg)} kg</b><span class="sub">${fmtDM(last.k)}</span></div>${prev?`<div><span class="lab">Desde el anterior</span><b>${kgd(last.kg-prev.kg)} kg</b><span class="sub">${fmtDM(prev.k)}</span></div>`:''}${L.length>1?`<div><span class="lab">Desde el primero</span><b>${kgd(last.kg-first.kg)} kg</b><span class="sub">${fmtDM(first.k)} · ${daysBetween(first.k,last.k)} días</span></div>`:''}</div>${wChart(L)}<details class="fold"><summary>Todos los pesos <span class="cnt">${L.length}</span></summary><ul class="wl">${[...L].reverse().map((x,i,a)=>`<li><span>${fmtDM(x.k)}</span><b>${kgf(x.kg)} kg</b><small>${a[i+1]?kgd(x.kg-a[i+1].kg):''}</small></li>`).join('')}</ul></details>`:'<p class="empty">Todavía no hay pesos. Carga tu archivo .txt o pega su texto.</p>';
+ const head=`<div class="dh"><div><p class="kick">Nutrición · control de peso para ALF</p><h2>Peso</h2><p class="sub">El original es tu Peso.txt de Dropbox (carpeta «11 Peso»). Aquí solo se lee: no se sube a internet y se queda en este aparato.</p></div>${XB()}</div>`;
+ const stats=last?`<div class="wst"><div><span class="lab">Último</span><b>${kgf(last.kg)} kg</b><span class="sub">${fmtDM(last.k)}</span></div>${prev?`<div><span class="lab">Desde el anterior</span><b>${kgd(last.kg-prev.kg)} kg</b><span class="sub">${fmtDM(prev.k)}</span></div>`:''}${L.length>1?`<div><span class="lab">Desde el primero</span><b>${kgd(last.kg-first.kg)} kg</b><span class="sub">${fmtDM(first.k)} · ${daysBetween(first.k,last.k)} días</span></div>`:''}</div>${wChart(L)}<details class="fold"><summary>Todos los pesos <span class="cnt">${L.length}</span></summary><ul class="wl">${[...L].reverse().map((x,i,a)=>`<li><span>${fmtDM(x.k)}</span><b>${kgf(x.kg)} kg</b><small>${a[i+1]?kgd(x.kg-a[i+1].kg):''}</small></li>`).join('')}</ul></details>`:'<p class="empty">Todavía no hay pesos. Pulsa «Cargar Peso.txt» y elígelo en Dropbox › Public › M A R I P O S A › 11 Peso.</p>';
  const bad=(V.bad||[]).length?`<p class="callout warn">No he entendido estas líneas: ${V.bad.map(esc).join(' · ')}</p>`:'';
- const src=V.at?`<p class="note">Leído de ${esc(V.src||'texto pegado')} · ${fmtShort(dkey(new Date(V.at)))} ${pad(new Date(V.at).getHours())}:${pad(new Date(V.at).getMinutes())}. Si este aparato perdiera los datos, vuelve a cargar el archivo y aparece todo.</p>`:'';
+ const src=V.at?`<p class="note">Leído de ${esc(V.src||'texto pegado')} · ${fmtShort(dkey(new Date(V.at)))} ${pad(new Date(V.at).getHours())}:${pad(new Date(V.at).getMinutes())}. Si este aparato perdiera los datos, vuelve a cargar Peso.txt y aparece todo.</p>`:'';
  $('wBody').innerHTML=head+stats+bad+
- `<div class="wact"><label class="btn up">${I.clip}Cargar el .txt<input type="file" id="wFile" accept=".txt,text/plain"></label><button type="button" class="btn" data-act="wpaste">Pegar texto</button>${last?`<button type="button" class="btn primary" data-act="wsend">Enviar el último a ALF</button>`:''}</div>`+
- `<div id="wPaste" class="wpaste" hidden><textarea class="in" id="wTxt" rows="6" placeholder="Diciembre 2026&#10;Martes, 1 - XX,X Kg&#10;Miércoles, 2 - XX,X Kg"></textarea><div class="df"><span class="note">Una línea por día. Si cambia el mes, pon una línea con el mes y el año.</span><button type="button" class="btn primary" data-act="wread">Leer</button></div></div>`+
+ `<div class="wact"><label class="btn up">${I.clip}Cargar Peso.txt<input type="file" id="wFile" accept=".txt,text/plain"></label><button type="button" class="btn" data-act="wpaste">Pegar texto</button>${last?`<button type="button" class="btn primary" data-act="wsend">Enviar el último a ALF</button>`:''}</div>`+
+ `<div id="wPaste" class="wpaste" hidden><textarea class="in" id="wTxt" rows="6" placeholder="PESO&#10;Diciembre 2026&#10;Miércoles, 2 - XX,X Kg&#10;Martes, 1 - XX,X Kg"></textarea><div class="df"><span class="note">Una línea por día, lo más reciente arriba. Si cambia el mes, pon antes una línea con el mes y el año.</span><button type="button" class="btn primary" data-act="wread">Leer</button></div></div>`+
  `<p class="note" id="wMsg">${esc(msg||'')}</p>`+src}
 function wFromFile(file){if(!file)return;const r=new FileReader();r.onload=()=>{const x=wSet(String(r.result||''),`«${file.name}»`);wDyn(x.ok?`Leídos ${x.n} pesos.`:'En ese archivo no he encontrado ningún peso.')};r.onerror=()=>wDyn('No se ha podido leer el archivo.');r.readAsText(file)}
 
